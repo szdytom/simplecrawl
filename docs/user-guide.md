@@ -614,6 +614,12 @@ article fails. There is no feed-content fallback.
 If the extracted body starts with an H1 whose text matches the article title,
 that duplicate heading is removed before the body is written.
 
+MathJax-style inline and display formulas are preserved as `\(...\)` and
+`\[...\]`, including formulas inside tables. Empty table header cells are kept
+so the columns stay aligned. Out of code spans and code blocks, escaped
+parentheses and brackets become numeric HTML entities, which render normally
+but are not mistaken for LaTeX delimiters.
+
 ### Manual files
 
 The tool never scans source directories for Markdown files. A file you create by
@@ -1209,8 +1215,8 @@ fetch it again. Existing files are never overwritten.
 - No feed-content fallback.
 - No `add`, `remove`, `init`, or `--force`.
 - No built-in LLM or summarizer.
-- No Markview-style math/empty-table preservation yet; use a `post_download`
-  hook for site-specific cleanup.
+- Math and empty table headers are preserved, but a `post_download` hook may
+  still be useful for site-specific cleanup.
 - Feed fetching is incremental, but a feed that only exposes the latest N entries
   cannot be used to recover entries that have already disappeared from the feed.
 

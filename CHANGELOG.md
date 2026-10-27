@@ -13,3 +13,4 @@
 - feat: load extra TLS trust roots from the global XDG config.
 - feat: add per-feed `after` date filtering for sync.
 - feat: add per-feed CSS selector extraction scopes.
+- feat: preserve math and empty table headers during article extraction.

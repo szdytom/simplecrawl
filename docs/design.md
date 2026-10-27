@@ -194,8 +194,11 @@ Rules:
 - The page title is only a fallback; the feed entry title has priority.
 - If the extracted body starts with an H1 equal to the article title, that
   duplicate H1 is removed.
-- Markview-style math and empty-table preservation is deferred. A
-  `post_download` command can handle site-specific cleanup.
+- Math and empty tables are preserved in the Markview style. `.math` spans
+  and `script[type^='math/tex']` become `\(...\)` or `\[...\]`, pipes inside
+  table math stay inside their cell, and empty header cells keep their column.
+- CommonMark punctuation escapes `\(`, `\)`, `\[`, and `\]` outside code
+  become numeric HTML entities, so prose is not read as LaTeX math.
 - Article titles: feed title, then extracted title, then URL.
 - Dates: feed `published`, then feed `updated`, then page metadata, then the
   download time.

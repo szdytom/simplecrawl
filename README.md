@@ -318,8 +318,8 @@ Exit codes:
 - Feed-provided content is not used as a fallback. If the article page cannot
   be fetched or extracted, the article fails.
 - JavaScript-rendered pages are not supported.
-- Markview-style math and empty-table preservation is not built in yet. Use a
-  `post_download` command for site-specific cleanup.
+- Math and empty table headers are preserved, but a `post_download` command may
+  still be useful for site-specific cleanup.
 
 ## License
 
