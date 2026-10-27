@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::ExitCode};
 
 use anyhow::Context;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use scrawl_core::{
 	Config, Reporter, RootLock, SyncOptions,
 	fetch::{list_sources, run_fetch},
@@ -10,7 +10,12 @@ use scrawl_core::{
 };
 
 #[derive(Debug, Parser)]
-#[command(name = "scrawl", version, about = "Archive feeds as local Markdown")]
+#[command(
+	name = "scrawl",
+	version,
+	about = "Archive feeds as local Markdown",
+	disable_help_subcommand = true
+)]
 struct Cli {
 	/// Change to this directory before running.
 	#[arg(short = 'C', default_value = ".", global = true)]
@@ -54,7 +59,14 @@ enum Command {
 	},
 	/// Rebuild every daily index and INDEX.md from state.
 	Index,
+	/// Show standard help followed by the full user guide.
+	Help {
+		/// Show help for this subcommand instead.
+		topic: Option<String>,
+	},
 }
+
+const USER_GUIDE: &str = include_str!("../../../docs/user-guide.md");
 
 #[derive(Debug)]
 struct CliError {
@@ -84,6 +96,29 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<ExitCode, CliError> {
 	let cli = Cli::parse();
+	if let Command::Help { topic } = &cli.command {
+		let mut command = Cli::command();
+		if let Some(topic) = topic {
+			let Some(subcommand) = command.find_subcommand_mut(topic) else {
+				return Err(CliError::new(
+					2,
+					anyhow::anyhow!("unknown command `{topic}`"),
+				));
+			};
+			subcommand
+				.print_help()
+				.context("failed to print help")
+				.map_err(|error| CliError::new(1, error))?;
+			println!();
+		} else {
+			command
+				.print_help()
+				.context("failed to print help")
+				.map_err(|error| CliError::new(1, error))?;
+			println!("\n\n{USER_GUIDE}");
+		}
+		return Ok(ExitCode::SUCCESS);
+	}
 	let root = cli.directory;
 	if !root.is_dir() {
 		return Err(CliError::new(
@@ -176,6 +211,7 @@ async fn run() -> Result<ExitCode, CliError> {
 			}
 			Ok(ExitCode::SUCCESS)
 		}
+		Command::Help { .. } => Ok(ExitCode::SUCCESS),
 		Command::Index => {
 			let config = Config::load_optional(&root)
 				.map_err(|e| CliError::new(2, anyhow::Error::new(e)))?;

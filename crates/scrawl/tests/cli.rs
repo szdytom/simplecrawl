@@ -490,3 +490,30 @@ dir = "blog"
 	assert!(feed_ok.calls() >= 2);
 	assert_eq!(article_files(&root.path().join("blog")).len(), 1);
 }
+
+#[test]
+fn help_prints_standard_help_then_embedded_user_guide() {
+	let output = Command::cargo_bin("scrawl")
+		.unwrap()
+		.arg("help")
+		.output()
+		.unwrap();
+	assert!(output.status.success());
+	let text = String::from_utf8(output.stdout).unwrap();
+	let usage = text.find("Usage: scrawl").expect("standard help");
+	let guide = text
+		.find("# scrawl user guide")
+		.expect("embedded user guide");
+	assert!(usage < guide, "the guide should follow standard help");
+	assert!(text.contains("## What scrawl does"));
+
+	let output = Command::cargo_bin("scrawl")
+		.unwrap()
+		.args(["help", "sync"])
+		.output()
+		.unwrap();
+	assert!(output.status.success());
+	let text = String::from_utf8(output.stdout).unwrap();
+	assert!(text.contains("Usage: sync"));
+	assert!(!text.contains("# scrawl user guide"));
+}

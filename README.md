@@ -5,7 +5,8 @@ JSON feeds, downloads each article, extracts its main content, and stores it as
 local Markdown. It is meant for personal archiving: files are written once and
 never overwritten, so edits and deletions you make by hand are respected.
 
-See [`docs/design.md`](docs/design.md) for the agreed design constraints.
+See [`docs/user-guide.md`](docs/user-guide.md) for the detailed user guide and
+[`docs/design.md`](docs/design.md) for the agreed design constraints.
 
 ## Features
 

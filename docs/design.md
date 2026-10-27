@@ -66,6 +66,9 @@ scrawl index
 
 Global options: `-C <dir>`, `-v/--verbose`, `-q/--quiet`.
 
+`scrawl help` prints the standard command help followed by the full embedded
+user guide. `scrawl --help` remains the normal concise help.
+
 There is no `add`, `remove`, `init`, or `--force`. Subscriptions are edited by
 hand in `subscriptions.toml`.
 

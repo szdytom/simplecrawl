@@ -7,3 +7,5 @@
 - feat: add single-article fetch into `misc/` and JSON source listing.
 - build: add workspace crates, integration tests, and GitHub Actions CI.
 - docs: record the agreed design constraints in `docs/design.md`.
+- docs: add a detailed user guide in `docs/user-guide.md`.
+- feat: embed the user guide in `scrawl help` output.
