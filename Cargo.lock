@@ -1984,6 +1984,7 @@ name = "simplecrawl-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "dom_query",
  "dom_smoothie",
  "encoding_rs",
  "feed-rs",

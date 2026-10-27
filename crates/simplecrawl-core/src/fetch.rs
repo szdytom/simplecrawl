@@ -60,7 +60,7 @@ pub async fn run_fetch(
 	let final_url = response.final_url.clone();
 	let html = response.text();
 	let extracted =
-		tokio::task::spawn_blocking(move || extract(&html, &final_url))
+		tokio::task::spawn_blocking(move || extract(&html, &final_url, None))
 			.await
 			.map_err(|e| FetchError::Join(e.to_string()))??;
 	let (body, warnings) = localize_images(

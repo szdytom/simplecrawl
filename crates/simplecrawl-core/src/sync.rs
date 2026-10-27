@@ -309,28 +309,30 @@ async fn process_entry(
 	}
 	let final_url = response.final_url.clone();
 	let html = response.text();
-	let extracted =
-		match tokio::task::spawn_blocking(move || extract(&html, &final_url))
-			.await
-		{
-			Ok(Ok(extracted)) => extracted,
-			Ok(Err(err)) => {
-				return Err(Failure {
-					key: entry.key,
-					url,
-					title: entry.title,
-					reason: err.to_string(),
-				});
-			}
-			Err(err) => {
-				return Err(Failure {
-					key: entry.key,
-					url,
-					title: entry.title,
-					reason: format!("extraction task failed: {err}"),
-				});
-			}
-		};
+	let selector = feed.extract.selector.clone();
+	let extracted = match tokio::task::spawn_blocking(move || {
+		extract(&html, &final_url, selector.as_deref())
+	})
+	.await
+	{
+		Ok(Ok(extracted)) => extracted,
+		Ok(Err(err)) => {
+			return Err(Failure {
+				key: entry.key,
+				url,
+				title: entry.title,
+				reason: err.to_string(),
+			});
+		}
+		Err(err) => {
+			return Err(Failure {
+				key: entry.key,
+				url,
+				title: entry.title,
+				reason: format!("extraction task failed: {err}"),
+			});
+		}
+	};
 	let (body, warnings) = localize_images(
 		http,
 		&headers,

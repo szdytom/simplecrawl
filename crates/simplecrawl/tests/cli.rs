@@ -190,6 +190,100 @@ fn sync_archives_article_images_state_and_indexes() {
 		.code(2);
 }
 
+fn article_with_sidebar() -> &'static str {
+	r#"<!doctype html>
+<html>
+  <head>
+    <title>Hello World</title>
+    <meta name="author" content="Alice">
+    <meta property="article:published_time" content="2024-01-02T12:00:00Z">
+  </head>
+  <body>
+    <aside>Outside the selected subtree.</aside>
+    <article class="post">
+      <h1>Hello World</h1>
+      <p>Inside the selected subtree. This paragraph is long enough for readability to keep it as the article body.</p>
+      <p>A second selected paragraph makes the extracted content more stable across scoring changes.</p>
+      <p><img src="/img.png" alt="picture"></p>
+    </article>
+    <footer>Outside the selected subtree too.</footer>
+  </body>
+</html>"#
+}
+
+#[test]
+fn extract_selector_discards_content_outside_the_subtree() {
+	let server = MockServer::start();
+	let root = TempDir::new().unwrap();
+	let feed_url = server.url("/feed.xml");
+	let post_url = server.url("/post");
+	let rss = rss(&feed_url, &post_url);
+	server.mock(|when, then| {
+		when.method(GET).path("/feed.xml");
+		then.status(200)
+			.header("content-type", "application/rss+xml")
+			.body(&rss);
+	});
+	server.mock(|when, then| {
+		when.method(GET).path("/post");
+		then.status(200)
+			.header("content-type", "text/html")
+			.body(article_with_sidebar());
+	});
+	server.mock(|when, then| {
+		when.method(GET).path("/img.png");
+		then.status(200)
+			.header("content-type", "image/png")
+			.body(b"\x89PNG\r\n\x1a\n");
+	});
+	fs::write(
+		root.path().join("subscriptions.toml"),
+		format!(
+			r#"
+[[feeds]]
+url = "{feed_url}"
+dir = "blog"
+
+[feeds.extract]
+selector = "article.post"
+"#
+		),
+	)
+	.unwrap();
+
+	scrawl(root.path()).arg("sync").assert().success();
+
+	let dir = root.path().join("blog");
+	let files = article_files(&dir);
+	assert_eq!(files, vec!["2024-01-02-hello-world.md"]);
+	let markdown = fs::read_to_string(dir.join(&files[0])).unwrap();
+	assert!(markdown.contains("Inside the selected subtree"));
+	assert!(!markdown.contains("Outside the selected subtree"));
+}
+
+#[test]
+fn invalid_extract_selector_is_a_config_error() {
+	let root = TempDir::new().unwrap();
+	fs::write(
+		root.path().join("subscriptions.toml"),
+		r#"
+[[feeds]]
+url = "https://example.com/feed.xml"
+dir = "blog"
+
+[feeds.extract]
+selector = "article["
+"#,
+	)
+	.unwrap();
+
+	scrawl(root.path())
+		.arg("sync")
+		.assert()
+		.code(2)
+		.stderr(predicates::str::contains("invalid CSS selector"));
+}
+
 #[test]
 fn repeated_sync_does_not_duplicate_articles() {
 	let server = MockServer::start();

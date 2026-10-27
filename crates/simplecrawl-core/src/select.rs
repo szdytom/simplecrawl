@@ -80,7 +80,7 @@ mod tests {
 	use super::*;
 	use std::collections::BTreeMap;
 
-	use crate::config::{Config, FeedConfig, Hooks, Summarize};
+	use crate::config::{Config, ExtractConfig, FeedConfig, Hooks, Summarize};
 
 	fn feed(dir: &str, tags: &[&str]) -> FeedConfig {
 		FeedConfig {
@@ -91,6 +91,7 @@ mod tests {
 			headers: BTreeMap::default(),
 			hooks: Hooks::default(),
 			summarize: Summarize::default(),
+			extract: ExtractConfig::default(),
 		}
 	}
 

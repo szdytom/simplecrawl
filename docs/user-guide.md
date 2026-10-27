@@ -304,6 +304,9 @@ post_download = "other-formatter {file}"
 
 [feeds.summarize]
 command = "other-summarizer {file}"
+
+[feeds.extract]
+selector = "article.post-content"
 ```
 
 ### `[[feeds]]`
@@ -317,6 +320,7 @@ command = "other-summarizer {file}"
 | `headers` | no | Per-feed header overrides |
 | `hooks` | no | Per-feed hook overrides |
 | `summarize` | no | Per-feed summary override |
+| `extract` | no | Per-feed extraction scope |
 
 Rules:
 
@@ -328,6 +332,7 @@ Rules:
 - Duplicate feed `url` values are rejected.
 - `after` must be a date in `YYYY-MM-DD` form. Both quoted strings and native
   TOML dates are accepted.
+- `extract.selector` must be a valid CSS selector.
 - A feed `dir` is created on first sync if it does not exist.
 
 ### Per-feed `after` cutoff
@@ -342,6 +347,29 @@ url = "https://example.com/feed.xml"
 dir = "example"
 after = "2024-01-01"
 ```
+
+### Per-feed extraction scope
+
+`extract.selector` is a hard boundary for article extraction. Everything
+outside the matching subtree is discarded before the readability scoring runs.
+Content inside the subtree is still scored normally, so navigation, sidebars,
+and other non-article blocks nested in the subtree may still be removed.
+
+```toml
+[[feeds]]
+url = "https://example.com/feed.xml"
+dir = "example"
+
+[feeds.extract]
+selector = "article.post-content"
+```
+
+- The selector must be valid CSS; an invalid selector is a configuration error.
+- If the selector matches no elements on an article page, that article fails.
+- Multiple matches are merged into one restricted document in page order.
+  Nested matches are included once.
+- The selector applies only to `sync` articles for that feed; `fetch` always
+  extracts the whole page.
 
 ### `[headers]` and `[feeds.headers]`
 

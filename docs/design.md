@@ -117,6 +117,9 @@ post_download = "other-formatter {file}"
 
 [feeds.summarize]
 command = "other-summarizer {file}"
+
+[feeds.extract]
+selector = "article.post-content"
 ```
 
 Rules:
@@ -128,6 +131,10 @@ Rules:
 - `after` is an optional per-feed inclusive `YYYY-MM-DD` cutoff. Entries
   published before it, and entries without a publication or update date, are
   skipped.
+- `extract.selector` is an optional per-feed CSS selector. When present, the
+  article body is restricted to the matching subtrees before readability
+  scoring; invalid selectors are configuration errors and empty matches fail
+  the article.
 - Headers are global by default and per-feed override. Header names are compared
   case-insensitively.
 - Header values support `${ENV_VAR}` expansion. `$$` is a literal `$`. A missing
@@ -178,6 +185,10 @@ Rules:
 ## 8. Article extraction and rendering
 
 - Article pages are fetched and parsed with `dom_smoothie` in Markdown mode.
+- A per-feed `extract.selector` first replaces the document body with the
+  matching subtree HTML, so content outside is never scored. Content inside the
+  subtree still goes through normal readability pruning. Multiple matches are
+  merged once per match; nested matches are included once.
 - Feed-provided `content`/`summary` is **not** used as a fallback. If the article
   page cannot be fetched or no readable content is found, the article fails.
 - The page title is only a fallback; the feed entry title has priority.

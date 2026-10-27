@@ -1,6 +1,11 @@
-use std::{collections::BTreeMap, path::Path, sync::OnceLock};
+use std::{
+	collections::{BTreeMap, BTreeSet},
+	path::Path,
+	sync::OnceLock,
+};
 
 use chrono::DateTime;
+use dom_query::{Document, Matcher, NodeId};
 use dom_smoothie::{Config, Readability, TextMode};
 use regex::Regex;
 
@@ -18,9 +23,17 @@ pub struct Extracted {
 	pub markdown: String,
 }
 
-pub fn extract(html: &str, url: &str) -> Result<Extracted, ExtractError> {
-	let mut readability = Readability::from(html);
-	readability.doc_url = Some(url.to_string());
+pub fn extract(
+	html: &str,
+	url: &str,
+	selector: Option<&str>,
+) -> Result<Extracted, ExtractError> {
+	let doc = match selector {
+		Some(selector) => scoped_document(html, selector)?,
+		None => Document::from(html),
+	};
+	let mut readability = Readability::with_document(doc, Some(url), None)
+		.map_err(|e| ExtractError::Readability(e.to_string()))?;
 	readability.config = Config {
 		text_mode: TextMode::Markdown,
 		max_elements_to_parse: 100_000,
@@ -47,6 +60,36 @@ pub fn extract(html: &str, url: &str) -> Result<Extracted, ExtractError> {
 		updated,
 		markdown,
 	})
+}
+
+/// Restricts the document body to the elements matched by `selector`.
+/// Nested matches are kept once, and everything outside the matches is removed.
+fn scoped_document(
+	html: &str,
+	selector: &str,
+) -> Result<Document, ExtractError> {
+	let doc = Document::from(html);
+	let matcher = Matcher::new(selector)
+		.map_err(|_| ExtractError::InvalidSelector(selector.to_string()))?;
+	let selection = doc.select_matcher(&matcher);
+	if selection.is_empty() {
+		return Err(ExtractError::SelectorMiss(selector.to_string()));
+	}
+	let mut kept = BTreeSet::<NodeId>::new();
+	let mut scoped = String::new();
+	for node in selection.nodes() {
+		if node
+			.ancestors(None)
+			.iter()
+			.any(|ancestor| kept.contains(&ancestor.id))
+		{
+			continue;
+		}
+		kept.insert(node.id);
+		scoped.push_str(&node.inner_html());
+	}
+	doc.select_single("body").set_html(scoped);
+	Ok(doc)
 }
 
 fn parse_timestamp(value: &str) -> Option<i64> {
@@ -265,6 +308,10 @@ fn existing_image(
 pub enum ExtractError {
 	#[error("readability extraction failed: {0}")]
 	Readability(String),
+	#[error("invalid CSS selector `{0}`")]
+	InvalidSelector(String),
+	#[error("CSS selector `{0}` matched no elements")]
+	SelectorMiss(String),
 	#[error("no readable article content found")]
 	Empty,
 }

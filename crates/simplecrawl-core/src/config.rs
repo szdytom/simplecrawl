@@ -51,6 +51,8 @@ pub struct FeedConfig {
 	pub hooks: Hooks,
 	#[serde(default)]
 	pub summarize: Summarize,
+	#[serde(default)]
+	pub extract: ExtractConfig,
 }
 
 impl FeedConfig {
@@ -59,6 +61,13 @@ impl FeedConfig {
 			.as_deref()
 			.map(|value| value.parse().expect("feed `after` date is validated"))
 	}
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExtractConfig {
+	#[serde(default)]
+	pub selector: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -195,6 +204,11 @@ impl Config {
 				&& after.parse::<Date>().is_err()
 			{
 				return Err(ConfigError::InvalidAfter(after.clone()));
+			}
+			if let Some(selector) = &feed.extract.selector
+				&& dom_query::Matcher::new(selector).is_err()
+			{
+				return Err(ConfigError::InvalidSelector(selector.clone()));
 			}
 		}
 		if self.runtime.download_concurrency == 0
@@ -334,6 +348,8 @@ pub enum ConfigError {
 	InvalidTag(String),
 	#[error("invalid feed after date `{0}`; use YYYY-MM-DD")]
 	InvalidAfter(String),
+	#[error("invalid CSS selector `{0}`")]
+	InvalidSelector(String),
 	#[error("runtime concurrency and timeouts must be greater than zero")]
 	InvalidRuntime,
 	#[error("missing environment variable `{0}` used in headers")]

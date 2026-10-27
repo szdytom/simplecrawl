@@ -158,9 +158,16 @@ post_download = "other-formatter {file}"
 
 [feeds.summarize]
 command = "other-summarizer {file}"
+
+[feeds.extract]
+selector = "article.post-content"
 ```
 
 - `url` and `dir` are required. `dir` must be a single path segment.
+- `extract.selector` limits article extraction to the matching CSS subtree.
+  Content outside the subtree is discarded before Readability runs; content
+  inside is still scored and pruned normally. Invalid selectors are rejected
+  at configuration load, and a selector that matches nothing fails the article.
 - `tags` are used only by `sync` selectors. Article frontmatter tags come from
   the feed's own categories.
 - `after` skips entries published before the given inclusive `YYYY-MM-DD` date.
