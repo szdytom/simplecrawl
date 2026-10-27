@@ -1,10 +1,11 @@
 [package]
-name = "scrawl"
+name = "simplecrawl"
 version = "0.1.0"
 description = "A small RSS/Atom/JSON Feed to Markdown archiver"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "scrawl"
@@ -13,7 +14,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-scrawl-core = { path = "../scrawl-core" }
+simplecrawl-core = { version = "0.1.0", path = "../simplecrawl-core" }
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 

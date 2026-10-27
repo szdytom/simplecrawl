@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::ExitCode};
 
 use anyhow::Context;
 use clap::{CommandFactory, Parser, Subcommand};
-use scrawl_core::{
+use simplecrawl_core::{
 	Config, Reporter, RootLock, SyncOptions,
 	fetch::{list_sources, run_fetch},
 	index,
@@ -227,7 +227,7 @@ async fn run() -> Result<ExitCode, CliError> {
 	}
 }
 
-fn print_table(sources: &[scrawl_core::ListEntry]) {
+fn print_table(sources: &[simplecrawl_core::ListEntry]) {
 	let headers = [
 		"DIR",
 		"TITLE",

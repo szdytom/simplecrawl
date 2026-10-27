@@ -1,10 +1,11 @@
 [package]
-name = "scrawl-core"
+name = "simplecrawl-core"
 version = "0.1.0"
-description = "Core library for scrawl, a small feed-to-Markdown archiver"
+description = "Core library for simplecrawl, a small feed-to-Markdown archiver"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }

@@ -30,8 +30,8 @@ Non-goals for v1:
 - Unix only: Linux and macOS. The hook runner uses `sh -c`.
 - Rust edition 2024, current stable, MSRV 1.89. No MSRV promise beyond that.
 - Workspace with two crates:
-  - `scrawl-core`: configuration, feed parsing, HTTP, extraction, state, indexes.
-  - `scrawl`: CLI binary named `scrawl`.
+  - `simplecrawl-core`: configuration, feed parsing, HTTP, extraction, state, indexes.
+  - `simplecrawl`: package for the CLI binary named `scrawl`.
 - License: GPL-2.0-or-later.
 - Documentation, CLI help, and error messages are English.
 
@@ -129,6 +129,8 @@ Rules:
 - Header values support `${ENV_VAR}` expansion. `$$` is a literal `$`. A missing
   variable is a configuration error.
 - Runtime concurrency and timeouts must be greater than zero.
+- TLS extra trust anchors live in a separate global XDG config file, not in
+  `subscriptions.toml`.
 
 ## 6. Feed handling
 
@@ -162,6 +164,9 @@ Rules:
 - Request timeout is `http_timeout_secs`.
 - Default User-Agent is `scrawl/<version>`. Proxy environment variables are
   honored by `reqwest`.
+- A global `$XDG_CONFIG_HOME/scrawl/config.toml` may set `tls_extra_roots` to
+  a PEM bundle of additional trust anchors. The file is optional; relative
+  paths resolve from its own directory.
 - Custom headers are applied to feed, article, and image requests.
 - `robots.txt` is not consulted.
 - Response bodies are capped at 20 MiB.

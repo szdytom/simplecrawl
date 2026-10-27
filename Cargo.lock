@@ -1795,47 +1795,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "scrawl"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "clap",
- "httpmock",
- "predicates",
- "scrawl-core",
- "serde_json",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "scrawl-core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dom_smoothie",
- "encoding_rs",
- "feed-rs",
- "futures",
- "hex",
- "httpmock",
- "jiff",
- "minijinja",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "sha2",
- "tempfile",
- "thiserror",
- "tokio",
- "toml",
- "url",
-]
-
-[[package]]
 name = "selectors"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2003,6 +1962,47 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2f8bec09ae8fae0f4f265a4559a9334be3929d8504e9b536df0a41302bd1733"
 dependencies = [
  "bstr",
+]
+
+[[package]]
+name = "simplecrawl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "httpmock",
+ "predicates",
+ "serde_json",
+ "simplecrawl-core",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "simplecrawl-core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dom_smoothie",
+ "encoding_rs",
+ "feed-rs",
+ "futures",
+ "hex",
+ "httpmock",
+ "jiff",
+ "minijinja",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml",
+ "url",
 ]
 
 [[package]]

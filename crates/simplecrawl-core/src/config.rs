@@ -1,10 +1,16 @@
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{
+	collections::BTreeMap,
+	fs,
+	path::{Path, PathBuf},
+};
 
 use serde::Deserialize;
 
 use crate::util::ensure_relative_segment;
 
 pub const CONFIG_FILE: &str = "subscriptions.toml";
+pub const GLOBAL_CONFIG_DIR: &str = "scrawl";
+pub const GLOBAL_CONFIG_FILE: &str = "config.toml";
 pub const RESERVED_NAMES: &[&str] = &[
 	"index",
 	"misc",
@@ -67,6 +73,8 @@ pub struct Runtime {
 	pub summary_timeout_secs: u64,
 	pub per_host_delay_ms: u64,
 	pub retry_base_ms: u64,
+	#[serde(skip)]
+	pub tls_extra_roots: Option<PathBuf>,
 }
 
 impl Default for Runtime {
@@ -79,8 +87,28 @@ impl Default for Runtime {
 			summary_timeout_secs: 60,
 			per_host_delay_ms: 200,
 			retry_base_ms: 1000,
+			tls_extra_roots: None,
 		}
 	}
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct GlobalConfig {
+	tls_extra_roots: Option<PathBuf>,
+}
+
+pub fn global_config_path() -> Option<PathBuf> {
+	let config_home = std::env::var_os("XDG_CONFIG_HOME")
+		.filter(|value| !value.is_empty())
+		.map(PathBuf::from)
+		.filter(|path| path.is_absolute())
+		.or_else(|| {
+			std::env::var_os("HOME")
+				.filter(|value| !value.is_empty())
+				.map(|home| PathBuf::from(home).join(".config"))
+		})?;
+	Some(config_home.join(GLOBAL_CONFIG_DIR).join(GLOBAL_CONFIG_FILE))
 }
 
 impl Config {
@@ -91,6 +119,7 @@ impl Config {
 		let mut config: Self = toml::from_str(&text)
 			.map_err(|e| ConfigError::Toml(path.clone(), e))?;
 		config.expand_headers()?;
+		config.load_global()?;
 		config.validate()?;
 		Ok(config)
 	}
@@ -98,7 +127,9 @@ impl Config {
 	pub fn load_optional(root: &Path) -> Result<Self, ConfigError> {
 		let path = root.join(CONFIG_FILE);
 		if !path.exists() {
-			return Ok(Self::default());
+			let mut config = Self::default();
+			config.load_global()?;
+			return Ok(config);
 		}
 		Self::load(root)
 	}
@@ -179,6 +210,29 @@ impl Config {
 	pub fn summarize_for(&self, feed: Option<&FeedConfig>) -> Option<String> {
 		feed.and_then(|f| f.summarize.command.clone())
 			.or_else(|| self.summarize.command.clone())
+	}
+
+	fn load_global(&mut self) -> Result<(), ConfigError> {
+		let Some(path) = global_config_path() else {
+			return Ok(());
+		};
+		let text = match fs::read_to_string(&path) {
+			Ok(text) => text,
+			Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+				return Ok(());
+			}
+			Err(error) => return Err(ConfigError::Io(path, error)),
+		};
+		let global: GlobalConfig = toml::from_str(&text)
+			.map_err(|error| ConfigError::Toml(path.clone(), error))?;
+		if let Some(extra) = global.tls_extra_roots {
+			self.runtime.tls_extra_roots = Some(if extra.is_relative() {
+				path.parent().map_or(extra.clone(), |dir| dir.join(&extra))
+			} else {
+				extra
+			});
+		}
+		Ok(())
 	}
 
 	fn expand_headers(&mut self) -> Result<(), ConfigError> {

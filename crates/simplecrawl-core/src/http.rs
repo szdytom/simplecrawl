@@ -1,5 +1,6 @@
 use std::{
 	collections::{BTreeMap, HashMap},
+	path::PathBuf,
 	sync::{Arc, Mutex},
 	time::Duration,
 };
@@ -47,11 +48,22 @@ impl HttpResponse {
 
 impl HttpClient {
 	pub fn new(runtime: &Runtime) -> Result<Self, HttpError> {
-		let client = reqwest::Client::builder()
+		let mut builder = reqwest::Client::builder()
 			.timeout(Duration::from_secs(runtime.http_timeout_secs))
 			.user_agent(concat!("scrawl/", env!("CARGO_PKG_VERSION")))
-			.redirect(reqwest::redirect::Policy::limited(10))
-			.build()?;
+			.redirect(reqwest::redirect::Policy::limited(10));
+		if let Some(path) = &runtime.tls_extra_roots {
+			let pem = std::fs::read(path).map_err(|error| {
+				HttpError::ExtraRoots(path.clone(), error.to_string())
+			})?;
+			let certs = reqwest::Certificate::from_pem_bundle(&pem).map_err(
+				|error| HttpError::ExtraRoots(path.clone(), error.to_string()),
+			)?;
+			for cert in certs {
+				builder = builder.add_root_certificate(cert);
+			}
+		}
+		let client = builder.build()?;
 		Ok(Self {
 			client,
 			global: Arc::new(Semaphore::new(runtime.download_concurrency)),
@@ -263,4 +275,6 @@ pub enum HttpError {
 	InvalidUrl,
 	#[error("invalid header `{0}`")]
 	InvalidHeader(String),
+	#[error("failed to load extra TLS roots from {0}: {1}")]
+	ExtraRoots(PathBuf, String),
 }

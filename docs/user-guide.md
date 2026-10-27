@@ -49,10 +49,11 @@ without a subscription go into `misc/`.
 ### From this repository
 
 ```sh
-cargo install --path crates/scrawl
+cargo install --path crates/simplecrawl
 ```
 
-The binary is called `scrawl`.
+The package is called `simplecrawl`; the installed binary is `scrawl`. After a
+crates.io release, install it with `cargo install simplecrawl`.
 
 ### Requirements
 
@@ -397,6 +398,50 @@ summary in the indexes. Per-feed commands override the global command. See
 
 Concurrency and timeouts must be greater than zero. `per_host_delay_ms` and
 `retry_base_ms` may be zero, which is mainly useful in tests.
+
+### Global configuration
+
+A small global configuration file can be used for settings that should apply
+to every archive. It is not part of `subscriptions.toml` and is never
+rewritten by the tool. Its location follows the XDG base directory rules:
+
+```text
+$XDG_CONFIG_HOME/scrawl/config.toml
+```
+
+If `XDG_CONFIG_HOME` is unset, empty, or relative, the fallback is:
+
+```text
+$HOME/.config/scrawl/config.toml
+```
+
+The file is optional. Supported keys:
+
+```toml
+# Extra PEM certificates appended to the built-in trust store.
+tls_extra_roots = "certs/extra-roots.pem"
+```
+
+Relative paths are resolved from the directory containing `config.toml`, not
+from the archive root or the current working directory. The file may contain
+one or more PEM certificates.
+
+This is an escape hatch for servers that send an incomplete TLS chain or use a
+private CA. For an incomplete public chain, add the missing intermediate
+certificate itself, not just its root. For example, a server whose leaf
+certificate is issued by Let's Encrypt `YR1` but does not send `YR1` can use:
+
+```sh
+curl -fsS http://yr1.i.lencr.org/ -o yr1.der
+openssl x509 -inform DER -in yr1.der -out \
+  "$XDG_CONFIG_HOME/scrawl/certs/extra-roots.pem"
+```
+
+Then set:
+
+```toml
+tls_extra_roots = "certs/extra-roots.pem"
+```
 
 ### Environment expansion in headers
 

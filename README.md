@@ -24,8 +24,11 @@ See [`docs/user-guide.md`](docs/user-guide.md) for the detailed user guide and
 ## Install
 
 ```sh
-cargo install --path crates/scrawl
+cargo install --path crates/simplecrawl
 ```
+
+The package is called `simplecrawl`; the installed binary is `scrawl`. After a
+crates.io release, `cargo install simplecrawl` installs the same binary.
 
 Requires a recent stable Rust toolchain (edition 2024). Linux and macOS are
 supported. Windows is not supported; use WSL if needed.
@@ -168,6 +171,18 @@ command = "other-summarizer {file}"
   `reqwest`.
 - Transient failures are retried up to five times with exponential backoff.
   `Retry-After` is honored. HTTP 4xx responses are not retried.
+
+A global file at `$XDG_CONFIG_HOME/scrawl/config.toml` (fallback
+`~/.config/scrawl/config.toml`) can add extra TLS trust anchors:
+
+```toml
+tls_extra_roots = "certs/extra-roots.pem"
+```
+
+Relative paths are resolved from that config file's directory. This is useful
+for servers with an incomplete certificate chain; include the missing
+intermediate certificate in the PEM file. See the
+[user guide](docs/user-guide.md#global-configuration) for details.
 
 ## Article files
 

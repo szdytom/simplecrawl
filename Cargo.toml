@@ -1,11 +1,12 @@
 [workspace]
-members = ["crates/scrawl-core", "crates/scrawl"]
+members = ["crates/simplecrawl-core", "crates/simplecrawl"]
 resolver = "3"
 
 [workspace.package]
 edition = "2024"
 license = "GPL-2.0-or-later"
 rust-version = "1.89"
+repository = "https://github.com/szdytom/simplecrawl"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

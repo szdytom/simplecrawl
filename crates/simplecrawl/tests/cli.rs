@@ -60,9 +60,34 @@ fn article() -> &'static str {
 
 fn scrawl(root: &Path) -> Command {
 	let mut command = Command::cargo_bin("scrawl").unwrap();
-	command.arg("-C").arg(root).env("TZ", "UTC");
+	command
+		.arg("-C")
+		.arg(root)
+		.env("TZ", "UTC")
+		.env("XDG_CONFIG_HOME", root.join("xdg-config"));
 	command
 }
+
+const TEST_ROOT_CERT: &str = r"-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIUH976YBzPpqajgbymSRcaqRaKSR4wDQYJKoZIhvcNAQEL
+BQAwGzEZMBcGA1UEAwwQc2NyYXdsLXRlc3Qtcm9vdDAeFw0yNjEwMjcxMjQzMDZa
+Fw0zNjEwMjQxMjQzMDZaMBsxGTAXBgNVBAMMEHNjcmF3bC10ZXN0LXJvb3QwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDUv5z/5S0iw65BG/rFN3VGkftm
+Q1usHoHFijKCcOw1rCXyO2FwtsecT78uEKcHIBtT6W7hpyESfBzmGUINHFVpaNPO
+PGO+u5w/vbRS2okImSwdbx4XfsUNnuvxVcU3oty8V8TAdHT1atefD5RgAQ4g+LOy
+gzaYWgb6/z0cMoD1+EodIU2P8rych1C5mCSZl7FoTeyeP1ESDj6fgjOnT+Za2/DC
+WO1lsZHtsC+C8r6LI6AjGHQHbNwpm7shwslf4aQwJIsXi/PDBPrmmQS8gXBpHuwB
+745R7HQz8ygf7bn73VLp3PuTDl8EJnNiksLtH5NllhIaErbpXoR1FSBtVVnhAgMB
+AAGjUzBRMB0GA1UdDgQWBBRTlPsuVriUReqtW+h3jRG9aeN8GjAfBgNVHSMEGDAW
+gBRTlPsuVriUReqtW+h3jRG9aeN8GjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+DQEBCwUAA4IBAQA9VeA4Np+oazreDuAttCBLqg4zC9Acvj+F1nmHVdzwVbA/I7hB
+8um3WzJ/HuZREWP7T+4eMaoJwa8TnQaYN9AbJ63eWuXVMHK4FTtQPDuBaqZ66TrC
+yc4RfG1VWtrl/cAuWzWl48kdL5jrB+jt+MPCBYyyETE3A1v1RX6YiMjlgN68AnBk
+3uWpCGjRcnf/bTb3+d1k9gMJ141cvrlPKHw/9ORyR1LF4wvziaB9nQ169rLMvyW7
+4VZAJrpsRyKs5PBU9uqxmeBWNyEpTI88n5SHmfyhGv833NcnOWMQ2pwJbhvZWH0b
+jwRLSqY7vGIwdgk7wwrqjb8/2cnKo1AiCvZF
+-----END CERTIFICATE-----
+";
 
 fn walk_files(dir: &Path) -> Vec<std::path::PathBuf> {
 	let mut out = Vec::new();
@@ -516,4 +541,57 @@ fn help_prints_standard_help_then_embedded_user_guide() {
 	let text = String::from_utf8(output.stdout).unwrap();
 	assert!(text.contains("Usage: sync"));
 	assert!(!text.contains("# scrawl user guide"));
+}
+
+#[test]
+fn global_config_loads_extra_tls_roots_from_xdg_config_home() {
+	let server = MockServer::start();
+	let root = TempDir::new().unwrap();
+	let feed_url = server.url("/feed.xml");
+	let post_url = server.url("/post");
+	let rss = rss(&feed_url, &post_url);
+	server.mock(|when, then| {
+		when.method(GET).path("/feed.xml");
+		then.status(200)
+			.header("content-type", "application/rss+xml")
+			.body(&rss);
+	});
+	let config_dir = root.path().join("xdg-config/scrawl");
+	fs::create_dir_all(&config_dir).unwrap();
+	fs::write(config_dir.join("extra-roots.pem"), TEST_ROOT_CERT).unwrap();
+	fs::write(
+		config_dir.join("config.toml"),
+		"tls_extra_roots = \"extra-roots.pem\"\n",
+	)
+	.unwrap();
+	write_config(root.path(), &feed_url);
+
+	scrawl(root.path())
+		.arg("sync")
+		.arg("--dry-run")
+		.assert()
+		.success();
+}
+
+#[test]
+fn per_repo_config_rejects_global_tls_extra_roots() {
+	let root = TempDir::new().unwrap();
+	fs::write(
+		root.path().join("subscriptions.toml"),
+		r#"
+[runtime]
+tls_extra_roots = "extra-roots.pem"
+
+[[feeds]]
+url = "https://example.com/feed.xml"
+dir = "example"
+"#,
+	)
+	.unwrap();
+
+	scrawl(root.path())
+		.arg("sync")
+		.arg("--dry-run")
+		.assert()
+		.code(2);
 }
