@@ -223,6 +223,82 @@ fn repeated_sync_does_not_duplicate_articles() {
 }
 
 #[test]
+fn feed_after_date_skips_older_entries_inclusively() {
+	let server = MockServer::start();
+	let root = TempDir::new().unwrap();
+	let feed_url = server.url("/feed.xml");
+	let post_url = server.url("/post");
+	let rss = format!(
+		r#"<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Blog</title>
+    <link>{feed_url}</link>
+    <description>Test feed</description>
+    <item>
+      <title>Old Post</title>
+      <link>{post_url}</link>
+      <guid isPermaLink="false">post-old</guid>
+      <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Cutoff Post</title>
+      <link>{post_url}</link>
+      <guid isPermaLink="false">post-cutoff</guid>
+      <pubDate>Tue, 02 Jan 2024 12:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>New Post</title>
+      <link>{post_url}</link>
+      <guid isPermaLink="false">post-new</guid>
+      <pubDate>Wed, 03 Jan 2024 12:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>"#
+	);
+	server.mock(|when, then| {
+		when.method(GET).path("/feed.xml");
+		then.status(200)
+			.header("content-type", "application/rss+xml")
+			.body(&rss);
+	});
+	let post_mock = server.mock(|when, then| {
+		when.method(GET).path("/post");
+		then.status(200)
+			.header("content-type", "text/html")
+			.body(article());
+	});
+	server.mock(|when, then| {
+		when.method(GET).path("/img.png");
+		then.status(200)
+			.header("content-type", "image/png")
+			.body(b"\x89PNG\r\n\x1a\n");
+	});
+	fs::write(
+		root.path().join("subscriptions.toml"),
+		format!(
+			r#"
+[[feeds]]
+url = "{feed_url}"
+dir = "blog"
+after = "2024-01-02"
+"#
+		),
+	)
+	.unwrap();
+
+	scrawl(root.path()).arg("sync").assert().success();
+
+	post_mock.assert_calls(2);
+	let mut files = article_files(&root.path().join("blog"));
+	files.sort();
+	assert_eq!(
+		files,
+		vec!["2024-01-02-cutoff-post.md", "2024-01-03-new-post.md"]
+	);
+}
+
+#[test]
 fn fetch_writes_misc_and_skips_duplicate_urls() {
 	let server = MockServer::start();
 	let root = TempDir::new().unwrap();

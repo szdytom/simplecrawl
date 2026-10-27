@@ -107,6 +107,7 @@ retry_base_ms = 1000
 url = "https://example.com/feed.xml"
 dir = "example"
 tags = ["rust", "tech"]
+after = "2024-01-01"
 
 [feeds.headers]
 Referer = "https://example.com/"
@@ -124,6 +125,9 @@ Rules:
   rejected.
 - `tags` belong to the subscription and are used only by `sync` selectors.
   They are not copied into article frontmatter.
+- `after` is an optional per-feed inclusive `YYYY-MM-DD` cutoff. Entries
+  published before it, and entries without a publication or update date, are
+  skipped.
 - Headers are global by default and per-feed override. Header names are compared
   case-insensitively.
 - Header values support `${ENV_VAR}` expansion. `$$` is a literal `$`. A missing
@@ -137,8 +141,8 @@ Rules:
 - Feed URLs must be direct HTTP(S) feed URLs. A website homepage is not
   autodiscovered.
 - Supported formats are RSS 0.9/1.0/2.0, Atom, and JSON Feed via `feed-rs`.
-- First sync processes all entries currently in the feed. `--limit N` processes
-  at most the newest N new entries per feed.
+- First sync processes all entries currently in the feed unless the feed sets
+  `after`. `--limit N` processes at most the newest N new entries per feed.
 - Later syncs process entries not already recorded as downloaded or ignored.
 - Feed requests send `If-None-Match` and `If-Modified-Since` when state has
   validators. A `304 Not Modified` means no new entries.

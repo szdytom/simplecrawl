@@ -294,6 +294,7 @@ retry_base_ms = 1000
 url = "https://example.com/feed.xml"
 dir = "example"
 tags = ["tech", "example"]
+after = "2024-01-01"
 
 [feeds.headers]
 Referer = "https://example.com/"
@@ -312,6 +313,7 @@ command = "other-summarizer {file}"
 | `url` | yes | Direct HTTP(S) RSS, Atom, or JSON Feed URL |
 | `dir` | yes | Single path segment used as the source folder |
 | `tags` | no | Subscription tags used by `sync` selectors |
+| `after` | no | Only sync entries published on or after this `YYYY-MM-DD` date |
 | `headers` | no | Per-feed header overrides |
 | `hooks` | no | Per-feed hook overrides |
 | `summarize` | no | Per-feed summary override |
@@ -324,7 +326,22 @@ Rules:
   `INDEX.md`, or `subscriptions.toml` (case-insensitive).
 - Duplicate `dir` values are rejected.
 - Duplicate feed `url` values are rejected.
+- `after` must be a date in `YYYY-MM-DD` form. Both quoted strings and native
+  TOML dates are accepted.
 - A feed `dir` is created on first sync if it does not exist.
+
+### Per-feed `after` cutoff
+
+`after` limits a source to entries published on or after the given date. The
+date is inclusive: an entry published on the date itself is synced. Entries
+without a publication or update date are skipped.
+
+```toml
+[[feeds]]
+url = "https://example.com/feed.xml"
+dir = "example"
+after = "2024-01-01"
+```
 
 ### `[headers]` and `[feeds.headers]`
 

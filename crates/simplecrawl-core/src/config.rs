@@ -4,7 +4,9 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-use serde::Deserialize;
+use jiff::civil::Date;
+use serde::{Deserialize, Deserializer, de};
+use toml::Value;
 
 use crate::util::ensure_relative_segment;
 
@@ -41,12 +43,22 @@ pub struct FeedConfig {
 	pub dir: String,
 	#[serde(default)]
 	pub tags: Vec<String>,
+	#[serde(default, deserialize_with = "deserialize_after")]
+	pub after: Option<String>,
 	#[serde(default)]
 	pub headers: BTreeMap<String, String>,
 	#[serde(default)]
 	pub hooks: Hooks,
 	#[serde(default)]
 	pub summarize: Summarize,
+}
+
+impl FeedConfig {
+	pub fn after_date(&self) -> Option<Date> {
+		self.after
+			.as_deref()
+			.map(|value| value.parse().expect("feed `after` date is validated"))
+	}
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -179,6 +191,11 @@ impl Config {
 					return Err(ConfigError::InvalidTag(tag.clone()));
 				}
 			}
+			if let Some(after) = &feed.after
+				&& after.parse::<Date>().is_err()
+			{
+				return Err(ConfigError::InvalidAfter(after.clone()));
+			}
 		}
 		if self.runtime.download_concurrency == 0
 			|| self.runtime.hook_concurrency == 0
@@ -248,6 +265,19 @@ impl Config {
 	}
 }
 
+fn deserialize_after<'de, D>(
+	deserializer: D,
+) -> Result<Option<String>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	match toml::Value::deserialize(deserializer)? {
+		Value::String(value) => Ok(Some(value)),
+		Value::Datetime(value) => Ok(Some(value.to_string())),
+		_ => Err(de::Error::custom("`after` must be a date")),
+	}
+}
+
 fn expand_env(value: &str) -> Result<String, ConfigError> {
 	let mut out = String::with_capacity(value.len());
 	let mut chars = value.chars().peekable();
@@ -302,6 +332,8 @@ pub enum ConfigError {
 	InvalidUrl(String),
 	#[error("invalid feed tag `{0}`")]
 	InvalidTag(String),
+	#[error("invalid feed after date `{0}`; use YYYY-MM-DD")]
+	InvalidAfter(String),
 	#[error("runtime concurrency and timeouts must be greater than zero")]
 	InvalidRuntime,
 	#[error("missing environment variable `{0}` used in headers")]

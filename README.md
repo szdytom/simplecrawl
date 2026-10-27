@@ -148,6 +148,7 @@ retry_base_ms = 1000
 url = "https://example.com/feed.xml"
 dir = "example"
 tags = ["rust", "tech"]
+after = "2024-01-01"
 
 [feeds.headers]
 Referer = "https://example.com/"
@@ -162,6 +163,8 @@ command = "other-summarizer {file}"
 - `url` and `dir` are required. `dir` must be a single path segment.
 - `tags` are used only by `sync` selectors. Article frontmatter tags come from
   the feed's own categories.
+- `after` skips entries published before the given inclusive `YYYY-MM-DD` date.
+  Entries without a date are skipped.
 - Custom headers are applied to feed, article, and image requests. Per-feed
   headers override global headers with the same name.
 - Header values support `${ENV_VAR}` expansion; `$$` produces a literal `$`.

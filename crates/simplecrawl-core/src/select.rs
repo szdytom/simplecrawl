@@ -87,6 +87,7 @@ mod tests {
 			url: format!("https://example.com/{dir}.xml"),
 			dir: dir.to_string(),
 			tags: tags.iter().map(ToString::to_string).collect(),
+			after: None,
 			headers: BTreeMap::default(),
 			hooks: Hooks::default(),
 			summarize: Summarize::default(),

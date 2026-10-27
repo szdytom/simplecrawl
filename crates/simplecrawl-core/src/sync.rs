@@ -18,8 +18,8 @@ use crate::{
 	reporter::Reporter,
 	state::{EntryState, SourceState, StateError},
 	util::{
-		atomic_write, local_date, local_rfc3339, normalize_url, now_unix,
-		slugify,
+		atomic_write, local_date, local_rfc3339, local_zoned, normalize_url,
+		now_unix, slugify,
 	},
 };
 
@@ -169,6 +169,14 @@ async fn sync_feed(
 		entries.retain(|entry| !state.is_known(&entry.key));
 		before - entries.len()
 	};
+	if let Some(after) = feed.after_date() {
+		entries.retain(|entry| {
+			entry
+				.published
+				.or(entry.updated)
+				.is_some_and(|ts| local_zoned(ts).date() >= after)
+		});
+	}
 	entries.sort_by(|a, b| {
 		b.published
 			.cmp(&a.published)
