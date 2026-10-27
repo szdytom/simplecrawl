@@ -1,0 +1,27 @@
+[package]
+name = "scrawl"
+version = "0.1.0"
+description = "A small RSS/Atom/JSON Feed to Markdown archiver"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "scrawl"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+scrawl-core = { path = "../scrawl-core" }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+httpmock = "0.9"
+predicates = "3"
+tempfile = "3"
+
+[lints]
+workspace = true
