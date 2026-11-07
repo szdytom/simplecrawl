@@ -86,14 +86,12 @@ fn rebuild(
 				.then_with(|| a.title.cmp(&b.title))
 		});
 		for (_, entry) in articles {
-			let href = relative_path(
-				&root.join("index"),
-				&root.join(&source.dir).join(&entry.path),
-			);
+			let path = root.join(&source.dir).join(&entry.path);
+			let href = relative_path(&root.join("index"), &path);
 			let article = entry_ref(&entry, href, &source.dir);
 			group.entries.push(EntryRef {
 				title: article.title.clone(),
-				href: article.href.clone(),
+				href: relative_path(root, &path),
 				source: article.source.clone(),
 				published_date: article.published_date.clone(),
 				published_ts: article.published_ts,

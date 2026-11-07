@@ -168,6 +168,7 @@ fn sync_archives_article_images_state_and_indexes() {
 
 	let index = fs::read_to_string(root.path().join("INDEX.md")).unwrap();
 	assert!(index.contains("## Test Blog (blog)"));
+	assert!(index.contains("](<blog/2024-01-02-hello-world.md>)"));
 	assert!(index.contains("Hello World"));
 
 	let daily = fs::read_dir(root.path().join("index"))
@@ -177,6 +178,7 @@ fn sync_archives_article_images_state_and_indexes() {
 		.collect::<Vec<_>>()
 		.join("\n");
 	assert!(daily.contains("Hello World"));
+	assert!(daily.contains("](<../blog/2024-01-02-hello-world.md>)"));
 	assert!(daily.contains("· blog · 2024-01-02"));
 
 	scrawl(root.path())
@@ -428,6 +430,7 @@ fn fetch_writes_misc_and_skips_duplicate_urls() {
 	assert!(root.path().join("misc/.simplecrawl.json").exists());
 	let index = fs::read_to_string(root.path().join("INDEX.md")).unwrap();
 	assert!(index.contains("Hello World"));
+	assert!(index.contains("](<misc/2024-01-02-hello-world.md>)"));
 }
 
 #[test]
@@ -465,6 +468,7 @@ fn index_rebuild_preserves_manual_content_outside_markers() {
 	scrawl(root.path()).arg("index").assert().success();
 	let index = fs::read_to_string(&index_path).unwrap();
 	assert!(index.contains("My manual note"));
+	assert!(index.contains("](<blog/2024-01-02-hello-world.md>)"));
 	assert!(index.contains("Hello World"));
 
 	fs::create_dir_all(root.path().join("templates")).unwrap();
